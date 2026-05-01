@@ -12,11 +12,13 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
 @Controller
 public class DiaryController {
 
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
     private static final DateTimeFormatter DISPLAY_FORMAT =
             DateTimeFormatter.ofPattern("yyyy년 M월 d일");
 
@@ -37,7 +39,7 @@ public class DiaryController {
     public String diary(@RequestParam(required = false) String date,
                         @AuthenticationPrincipal UserDetails userDetails,
                         Model model) {
-        LocalDate localDate = (date != null) ? LocalDate.parse(date) : LocalDate.now();
+        LocalDate localDate = (date != null) ? LocalDate.parse(date) : LocalDate.now(KST);
         User user = appUserService.findByUsername(userDetails.getUsername());
 
         model.addAttribute("date", localDate);
@@ -46,8 +48,8 @@ public class DiaryController {
         model.addAttribute("prevDate", localDate.minusDays(1).toString());
         model.addAttribute("nextDate", localDate.plusDays(1).toString());
         model.addAttribute("slots", hourLogService.getSlotsForDate(localDate, user));
-        model.addAttribute("currentHour", LocalTime.now().getHour());
-        model.addAttribute("isToday", localDate.equals(LocalDate.now()));
+        model.addAttribute("currentHour", LocalTime.now(KST).getHour());
+        model.addAttribute("isToday", localDate.equals(LocalDate.now(KST)));
 
         return "diary";
     }
