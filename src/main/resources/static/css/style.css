@@ -1,0 +1,284 @@
+/* ── Reset ──────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+    background: #f0f6f2;
+    color: #1a2e22;
+    -webkit-font-smoothing: antialiased;
+    min-width: 290px;
+}
+
+/* ── Login ──────────────────────────────────────────────────────── */
+.login-page {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100dvh;
+    background: #f0f6f2;
+}
+
+.login-container {
+    width: 100%;
+    max-width: 360px;
+    padding: 2rem 1.5rem;
+}
+
+.login-title {
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    margin-bottom: 0.25rem;
+    color: #2d6a4f;
+}
+
+.login-subtitle {
+    color: #7aab8e;
+    font-size: 0.9rem;
+    margin-bottom: 2rem;
+}
+
+.form-group { margin-bottom: 0.75rem; }
+
+.form-group input {
+    width: 100%;
+    padding: 0.875rem 1rem;
+    border: 1.5px solid #c5dece;
+    border-radius: 10px;
+    font-size: 1rem;
+    background: white;
+    outline: none;
+    transition: border-color 0.15s;
+    color: #1a2e22;
+}
+
+.form-group input:focus { border-color: #3a7d5c; }
+
+.btn-login {
+    width: 100%;
+    padding: 0.9rem;
+    margin-top: 0.25rem;
+    background: #2d6a4f;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.btn-login:hover { background: #235840; }
+
+.msg-error   { color: #c0392b; font-size: 0.85rem; margin-bottom: 0.875rem; }
+.msg-success { color: #3a7d5c; font-size: 0.85rem; margin-bottom: 0.875rem; }
+
+.auth-link {
+    margin-top: 1.25rem;
+    font-size: 0.85rem;
+    color: #7aab8e;
+    text-align: center;
+}
+.auth-link a { color: #2d6a4f; font-weight: 600; text-decoration: none; }
+.auth-link a:hover { text-decoration: underline; }
+
+
+/* ── Diary Layout ───────────────────────────────────────────────── */
+.diary-page {
+    max-width: 600px;
+    margin: 0 auto;
+    min-height: 100dvh;
+    background: white;
+}
+
+/* ── Header ─────────────────────────────────────────────────────── */
+.app-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: white;
+    border-bottom: 1px solid #daeee3;
+    padding: 0 1rem;
+    height: 58px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.app-header-left {
+    display: flex;
+    flex-direction: row;
+    align-items: baseline;
+    gap: 0.5rem;
+}
+
+.app-title {
+    font-size: 1.05rem;
+    font-weight: 800;
+    letter-spacing: -0.3px;
+    color: #2d6a4f;
+}
+
+.app-tagline {
+    font-size: 0.78rem;
+    color: #7aab8e;
+    letter-spacing: 0.1px;
+}
+
+.btn-logout {
+    background: none;
+    border: 1.5px solid #c5dece;
+    border-radius: 8px;
+    padding: 0.3rem 0.75rem;
+    font-size: 0.8rem;
+    color: #7aab8e;
+    cursor: pointer;
+    font-family: inherit;
+    transition: border-color 0.15s, color 0.15s;
+}
+.btn-logout:hover { border-color: #3a7d5c; color: #3a7d5c; }
+
+/* ── Date Navigation ────────────────────────────────────────────── */
+.date-nav {
+    position: sticky;
+    top: 58px;
+    z-index: 99;
+    background: white;
+    border-bottom: 1px solid #daeee3;
+    padding: 0.625rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.date-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    text-decoration: none;
+    color: #7aab8e;
+    font-size: 0.9rem;
+    transition: background 0.1s;
+}
+.date-arrow:hover { background: #eef7f2; color: #2d6a4f; }
+
+.date-label {
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: -0.2px;
+    color: #1a2e22;
+}
+
+/* ── Hour Rows ──────────────────────────────────────────────────── */
+.hours-list { padding-bottom: 120px; }
+
+.hour-row {
+    border-bottom: 1px solid #eef7f2;
+    display: flex;
+    align-items: stretch;
+    cursor: pointer;
+    transition: background 0.08s;
+    min-height: 72px;
+}
+
+.hour-row:hover { background: #f7fbf8; }
+.hour-row.editing { background: #f7fbf8; cursor: default; }
+
+/* 현재 시간대 강조 */
+.hour-row.current-hour {
+    border-left: 3px solid #3a7d5c;
+}
+.hour-row.current-hour .hour-label {
+    color: #3a7d5c;
+    font-weight: 700;
+}
+
+/* ── Hour Label ─────────────────────────────────────────────────── */
+.hour-label {
+    width: 60px;
+    min-width: 60px;
+    padding: 1rem 1rem 0.875rem 1rem;
+    font-size: 0.82rem;
+    color: #c5dece;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+    line-height: 1;
+}
+
+.hour-row.filled .hour-label { color: #7aab8e; }
+
+/* ── Hour Content ───────────────────────────────────────────────── */
+.hour-content {
+    flex: 1;
+    padding: 0.75rem 1rem 0.75rem 0;
+    min-width: 0;
+}
+
+/* 미리보기 */
+.preview {
+    min-height: 44px;
+    max-height: 88px;
+    overflow-y: auto;
+    font-size: 0.875rem;
+    line-height: 1.55;
+    color: #c5dece;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.hour-row.filled .preview { color: #1a2e22; }
+
+/* ── Editor ─────────────────────────────────────────────────────── */
+.editor {
+    display: none;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.editor-textarea {
+    width: 100%;
+    min-height: 80px;
+    max-height: 200px;
+    padding: 0.625rem 0.75rem;
+    border: 1.5px solid #3a7d5c;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    line-height: 1.55;
+    resize: vertical;
+    font-family: inherit;
+    background: white;
+    color: #1a2e22;
+    outline: none;
+}
+
+.editor-textarea::placeholder { color: #b0ccba; }
+
+.editor-footer {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+.btn-save {
+    padding: 0.38rem 1rem;
+    background: #2d6a4f;
+    color: white;
+    border: none;
+    border-radius: 7px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.1s;
+}
+.btn-save:hover { background: #235840; }
+
+
+/* ── Scrollbar (webkit) ─────────────────────────────────────────── */
+.preview::-webkit-scrollbar { width: 4px; }
+.preview::-webkit-scrollbar-thumb { background: #c5dece; border-radius: 2px; }

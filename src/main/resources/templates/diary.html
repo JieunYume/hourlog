@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="_csrf" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:content="${_csrf.headerName}">
+    <title>HourLog</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body class="diary-page">
+
+    <!-- 헤더 -->
+    <header class="app-header">
+        <div class="app-header-left">
+            <span class="app-title">HourLog</span>
+            <span class="app-tagline">나 오늘 뭐했지?</span>
+        </div>
+        <form th:action="@{/logout}" method="post" style="margin:0">
+            <button type="submit" class="btn-logout">로그아웃</button>
+        </form>
+    </header>
+
+    <!-- 날짜 이동 -->
+    <nav class="date-nav">
+        <a th:href="@{/diary(date=${prevDate})}" class="date-arrow" aria-label="이전 날">◀</a>
+        <span class="date-label" th:text="${dateDisplay}"></span>
+        <a th:href="@{/diary(date=${nextDate})}" class="date-arrow" aria-label="다음 날">▶</a>
+    </nav>
+
+    <!-- 시간 목록 -->
+    <main class="hours-list">
+        <div th:each="slot : ${slots}"
+             th:id="'hour-' + ${slot.hour}"
+             th:class="${'hour-row ' + (slot.empty ? 'empty' : 'filled') + (isToday and slot.hour == currentHour ? ' current-hour' : '')}"
+             th:data-hour="${slot.hour}"
+             th:data-id="${slot.id ?: ''}"
+             th:data-date="${dateStr}">
+
+            <div class="hour-label" th:text="${slot.hourLabel}"></div>
+
+            <div class="hour-content">
+                <!-- 미리보기 -->
+                <div class="preview" th:text="${slot.content}"></div>
+
+                <!-- 편집기 (기본 숨김) -->
+                <div class="editor">
+                    <textarea class="editor-textarea"
+                              placeholder="나 뭐했지?"
+                              th:text="${slot.content ?: ''}"></textarea>
+                    <div class="editor-footer">
+                        <button type="button" class="btn-save">저장</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script th:inline="javascript">
+    /*<![CDATA[*/
+    const IS_TODAY = /*[[${isToday}]]*/ false;
+    const CURRENT_HOUR = /*[[${currentHour}]]*/ 0;
+    /*]]>*/
+
+    const csrfToken  = document.querySelector('meta[name="_csrf"]').content;
+    const csrfHeader = document.querySelector('meta[name="_csrf_header"]').content;
+
+    let activeRow = null;
+
+    // ── 에디터 열기 ──────────────────────────────────────────────────
+    function openEditor(row) {
+        if (activeRow === row) return;
+        if (activeRow) autoSaveAndClose(activeRow);
+
+        const preview  = row.querySelector('.preview');
+        const editor   = row.querySelector('.editor');
+        const textarea = editor.querySelector('.editor-textarea');
+
+        preview.style.display = 'none';
+        editor.style.display  = 'flex';
+        row.classList.add('editing');
+        row.dataset.original = textarea.value;
+        textarea.focus();
+        textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
+        activeRow = row;
+    }
+
+    // ── 에디터 닫기 ──────────────────────────────────────────────────
+    function closeEditor(row) {
+        const preview = row.querySelector('.preview');
+        const editor  = row.querySelector('.editor');
+        preview.style.display = '';
+        editor.style.display  = 'none';
+        row.classList.remove('editing');
+        if (activeRow === row) activeRow = null;
+    }
+
+    // ── 바깥 클릭 시 자동 저장 ───────────────────────────────────────
+    async function autoSaveAndClose(row) {
+        const textarea = row.querySelector('.editor-textarea');
+        const current  = textarea.value.trim();
+        const original = (row.dataset.original || '').trim();
+
+        if (current && current !== original) {
+            await saveLog(row);
+        } else {
+            closeEditor(row);
+        }
+    }
+
+    // ── 저장 (내용 비우면 삭제) ──────────────────────────────────────
+    async function saveLog(row) {
+        const content = row.querySelector('.editor-textarea').value.trim();
+
+        if (!content) {
+            await deleteLog(row);
+            return;
+        }
+
+        try {
+            const res = await fetch('/api/log', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', [csrfHeader]: csrfToken },
+                body: JSON.stringify({
+                    date: row.dataset.date,
+                    hour: parseInt(row.dataset.hour, 10),
+                    content
+                })
+            });
+            if (!res.ok) return;
+            const data = await res.json();
+            row.dataset.id = data.id;
+            row.querySelector('.preview').textContent = content;
+            row.querySelector('.editor-textarea').value = content;
+            row.classList.replace('empty', 'filled');
+        } catch (e) {
+            console.error('저장 실패', e);
+        } finally {
+            closeEditor(row);
+        }
+    }
+
+    // ── 삭제 ─────────────────────────────────────────────────────────
+    async function deleteLog(row) {
+        const id = row.dataset.id;
+        if (!id) { closeEditor(row); return; }
+
+        try {
+            const res = await fetch('/api/log/' + id, {
+                method: 'DELETE',
+                headers: { [csrfHeader]: csrfToken }
+            });
+            if (!res.ok) return;
+            row.dataset.id = '';
+            row.querySelector('.preview').textContent = '';
+            row.querySelector('.editor-textarea').value = '';
+            row.classList.replace('filled', 'empty');
+        } catch (e) {
+            console.error('삭제 실패', e);
+        } finally {
+            closeEditor(row);
+        }
+    }
+
+    // ── 이벤트 위임 ──────────────────────────────────────────────────
+    document.addEventListener('click', (e) => {
+        if (e.target.closest('.btn-save')) {
+            e.stopPropagation();
+            saveLog(e.target.closest('.hour-row'));
+            return;
+        }
+
+        const clickedRow = e.target.closest('.hour-row');
+        if (!clickedRow) {
+            if (activeRow) autoSaveAndClose(activeRow);
+            return;
+        }
+        openEditor(clickedRow);
+    });
+
+    // ── 오늘이면 현재 시각으로 스크롤 ───────────────────────────────
+    if (IS_TODAY) {
+        const currentRow = document.getElementById('hour-' + CURRENT_HOUR);
+        if (currentRow) {
+            setTimeout(() => currentRow.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+        }
+    }
+    </script>
+</body>
+</html>
