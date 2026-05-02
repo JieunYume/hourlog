@@ -37,6 +37,9 @@ public class HourLog {
     @Column(nullable = false, length = 500)
     private String content;
 
+    @Column(length = 10)
+    private String mood;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

@@ -32,12 +32,24 @@ public class HourLogService {
         for (int h = 0; h < 24; h++) {
             HourLog log = logMap.get(h);
             if (log != null) {
-                slots.add(new HourSlot(h, log.getId(), log.getContent()));
+                slots.add(new HourSlot(h, log.getId(), log.getContent(), log.getMood()));
             } else {
-                slots.add(new HourSlot(h, null, null));
+                slots.add(new HourSlot(h, null, null, null));
             }
         }
         return slots;
+    }
+
+    @Transactional
+    public HourLog saveMood(LocalDate date, int hour, String mood, User user) {
+        HourLog log = repository.findByLogDateAndHourAndUser(date, hour, user)
+                .orElse(new HourLog());
+        log.setUser(user);
+        log.setLogDate(date);
+        log.setHour(hour);
+        if (log.getContent() == null) log.setContent("");
+        log.setMood(mood == null || mood.isBlank() ? null : mood);
+        return repository.save(log);
     }
 
     @Transactional

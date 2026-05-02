@@ -170,7 +170,11 @@ body {
     font-weight: 600;
     letter-spacing: -0.2px;
     color: #1a2e22;
+    cursor: pointer;
+    transition: color 0.15s;
 }
+
+.date-label:hover { color: #2d6a4f; }
 
 /* ── Hour Rows ──────────────────────────────────────────────────── */
 .hours-list { padding-bottom: 120px; }
@@ -200,13 +204,96 @@ body {
 .hour-label {
     width: 60px;
     min-width: 60px;
-    padding: 1rem 1rem 0.875rem 1rem;
+    padding: 0.625rem 0;
     font-size: 0.82rem;
     color: #c5dece;
     font-weight: 500;
     font-variant-numeric: tabular-nums;
     flex-shrink: 0;
     line-height: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    position: relative;
+}
+
+/* ── Mood Box ────────────────────────────────────────────────────── */
+.mood-box {
+    width: 30px;
+    height: 30px;
+    border: 1.5px dashed #daeee3;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    position: relative;
+    transition: border-color 0.15s;
+}
+
+.mood-box:hover { border-color: #7aab8e; }
+
+.mood-box.has-mood {
+    border-style: solid;
+    border-color: #c5dece;
+}
+
+.mood-display {
+    font-size: 1rem;
+    line-height: 1;
+    user-select: none;
+}
+
+.mood-picker {
+    display: none;
+    position: absolute;
+    left: calc(100% + 6px);
+    top: 50%;
+    transform: translateY(-50%);
+    background: white;
+    border: 1.5px solid #c5dece;
+    border-radius: 10px;
+    padding: 6px;
+    z-index: 200;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.mood-picker.open { display: grid; }
+
+.mood-option {
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background 0.1s;
+    user-select: none;
+}
+
+.mood-option:hover { background: #f0f6f2; }
+.mood-option.selected { background: #e8f5ee; }
+
+/* ── Twemoji ─────────────────────────────────────────────────────── */
+img.emoji {
+    display: inline-block;
+    vertical-align: middle;
+    pointer-events: none;
+}
+
+.mood-display img.emoji {
+    width: 18px;
+    height: 18px;
+}
+
+.mood-option img.emoji {
+    width: 20px;
+    height: 20px;
 }
 
 .hour-row.filled .hour-label { color: #7aab8e; }
@@ -282,3 +369,98 @@ body {
 /* ── Scrollbar (webkit) ─────────────────────────────────────────── */
 .preview::-webkit-scrollbar { width: 4px; }
 .preview::-webkit-scrollbar-thumb { background: #c5dece; border-radius: 2px; }
+
+
+/* ── 커스텀 달력 ─────────────────────────────────────────────────── */
+.date-cal {
+    display: none;
+    position: fixed;
+    z-index: 300;
+    background: white;
+    border: 1.5px solid #c5dece;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    width: 252px;
+    overflow: hidden;
+    font-family: inherit;
+}
+
+.date-cal.open { display: block; }
+
+.cal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: white;
+    padding: 10px 8px;
+    border-bottom: 1px solid #eef7f2;
+}
+
+.cal-title {
+    color: #1a2e22;
+    font-size: 0.88rem;
+    font-weight: 600;
+}
+
+.cal-btn {
+    background: none;
+    border: none;
+    color: #7aab8e;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0 6px;
+    line-height: 1;
+    transition: color 0.1s;
+    font-family: inherit;
+}
+
+.cal-btn:hover { color: #2d6a4f; }
+
+.cal-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    background: white;
+    padding: 5px 6px 2px;
+}
+
+.cal-weekdays span {
+    text-align: center;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #c5dece;
+}
+
+.cal-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    padding: 6px;
+    gap: 2px;
+}
+
+.cal-day {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.82rem;
+    color: #1a2e22;
+    border-radius: 7px;
+    cursor: pointer;
+    transition: background 0.1s;
+}
+
+.cal-day:hover { background: #eef7f2; }
+
+.cal-day.today {
+    border: 1.5px solid #3a7d5c;
+    color: #3a7d5c;
+    font-weight: 700;
+}
+
+.cal-day.selected {
+    background: #2d6a4f;
+    color: white;
+    font-weight: 600;
+}
+
+.cal-day.today.selected { border-color: #2d6a4f; }

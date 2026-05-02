@@ -3,6 +3,7 @@ package com.jieun.hourlog.controller;
 import com.jieun.hourlog.domain.User;
 import com.jieun.hourlog.domain.HourLog;
 import com.jieun.hourlog.dto.LogRequest;
+import com.jieun.hourlog.dto.MoodRequest;
 import com.jieun.hourlog.service.AppUserService;
 import com.jieun.hourlog.service.HourLogService;
 import org.springframework.http.ResponseEntity;
@@ -30,6 +31,15 @@ public class LogApiController {
         User user = appUserService.findByUsername(userDetails.getUsername());
         HourLog log = hourLogService.save(
                 LocalDate.parse(request.date()), request.hour(), request.content(), user);
+        return ResponseEntity.ok(log);
+    }
+
+    @PatchMapping("/log/mood")
+    public ResponseEntity<HourLog> saveMood(@RequestBody MoodRequest request,
+                                            @AuthenticationPrincipal UserDetails userDetails) {
+        User user = appUserService.findByUsername(userDetails.getUsername());
+        HourLog log = hourLogService.saveMood(
+                LocalDate.parse(request.date()), request.hour(), request.mood(), user);
         return ResponseEntity.ok(log);
     }
 

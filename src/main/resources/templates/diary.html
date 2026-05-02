@@ -23,21 +23,51 @@
 
     <!-- 날짜 이동 -->
     <nav class="date-nav">
-        <a th:href="@{/diary(date=${prevDate})}" class="date-arrow" aria-label="이전 날">◀</a>
+        <a th:href="@{/diary(date=${prevDate})}" class="date-arrow" aria-label="이전 날">&#9664;</a>
         <span class="date-label" th:text="${dateDisplay}"></span>
-        <a th:href="@{/diary(date=${nextDate})}" class="date-arrow" aria-label="다음 날">▶</a>
+        <a th:href="@{/diary(date=${nextDate})}" class="date-arrow" aria-label="다음 날">&#9654;</a>
+
+        <!-- 커스텀 달력 -->
+        <div class="date-cal" id="date-cal">
+            <div class="cal-header">
+                <button class="cal-btn cal-prev" type="button">&#8249;</button>
+                <span class="cal-title"></span>
+                <button class="cal-btn cal-next" type="button">&#8250;</button>
+            </div>
+            <div class="cal-weekdays">
+                <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
+            </div>
+            <div class="cal-days" id="cal-days"></div>
+        </div>
     </nav>
 
     <!-- 시간 목록 -->
     <main class="hours-list">
         <div th:each="slot : ${slots}"
              th:id="'hour-' + ${slot.hour}"
-             th:class="${'hour-row ' + (slot.empty ? 'empty' : 'filled') + (isToday and slot.hour == currentHour ? ' current-hour' : '')}"
+             th:class="${'hour-row ' + (#strings.isEmpty(slot.content) ? 'empty' : 'filled') + (isToday and slot.hour == currentHour ? ' current-hour' : '')}"
              th:data-hour="${slot.hour}"
              th:data-id="${slot.id ?: ''}"
              th:data-date="${dateStr}">
 
-            <div class="hour-label" th:text="${slot.hourLabel}"></div>
+            <div class="hour-label">
+                <span class="hour-text" th:text="${slot.hourLabel}"></span>
+                <div class="mood-box"
+                     th:data-mood="${slot.mood ?: ''}"
+                     th:class="${(slot.mood != null and slot.mood != '') ? 'mood-box has-mood' : 'mood-box'}">
+                    <span class="mood-display" th:text="${slot.mood ?: ''}"></span>
+                    <div class="mood-picker">
+                        <span class="mood-option" data-emoji="😁">😁</span>
+                        <span class="mood-option" data-emoji="😊">😊</span>
+                        <span class="mood-option" data-emoji="😭">😭</span>
+                        <span class="mood-option" data-emoji="😤">😤</span>
+                        <span class="mood-option" data-emoji="😡">😡</span>
+                        <span class="mood-option" data-emoji="🥱">🥱</span>
+                        <span class="mood-option" data-emoji="😰">😰</span>
+                        <span class="mood-option" data-emoji="🥰">🥰</span>
+                    </div>
+                </div>
+            </div>
 
             <div class="hour-content">
                 <!-- 미리보기 -->
@@ -56,16 +86,24 @@
         </div>
     </main>
 
+    <script src="https://unpkg.com/twemoji@14.0.2/dist/twemoji.min.js" crossorigin="anonymous"></script>
     <script th:inline="javascript">
     /*<![CDATA[*/
     const IS_TODAY = /*[[${isToday}]]*/ false;
     const CURRENT_HOUR = /*[[${currentHour}]]*/ 0;
+    const DATE_STR = /*[[${dateStr}]]*/ '';
     /*]]>*/
 
     const csrfToken  = document.querySelector('meta[name="_csrf"]').content;
     const csrfHeader = document.querySelector('meta[name="_csrf_header"]').content;
 
     let activeRow = null;
+
+    const TWEMOJI_OPTS = {
+        base: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@v14.0.2/assets/',
+        folder: 'svg',
+        ext: '.svg'
+    };
 
     // ── 에디터 열기 ──────────────────────────────────────────────────
     function openEditor(row) {
@@ -130,7 +168,9 @@
             if (!res.ok) return;
             const data = await res.json();
             row.dataset.id = data.id;
-            row.querySelector('.preview').textContent = content;
+            const preview = row.querySelector('.preview');
+            preview.textContent = content;
+            twemoji.parse(preview, TWEMOJI_OPTS);
             row.querySelector('.editor-textarea').value = content;
             row.classList.replace('empty', 'filled');
         } catch (e) {
@@ -155,6 +195,12 @@
             row.querySelector('.preview').textContent = '';
             row.querySelector('.editor-textarea').value = '';
             row.classList.replace('filled', 'empty');
+            const moodBox = row.querySelector('.mood-box');
+            if (moodBox) {
+                moodBox.dataset.mood = '';
+                moodBox.querySelector('.mood-display').textContent = '';
+                moodBox.classList.remove('has-mood');
+            }
         } catch (e) {
             console.error('삭제 실패', e);
         } finally {
@@ -162,8 +208,86 @@
         }
     }
 
+    // ── 감정 이모지 저장 ──────────────────────────────────────────────
+    async function selectMood(row, moodBox, emoji) {
+        const newMood = moodBox.dataset.mood === emoji ? '' : emoji;
+        moodBox.dataset.mood = newMood;
+        const display = moodBox.querySelector('.mood-display');
+        display.textContent = newMood;
+        if (newMood) twemoji.parse(display, TWEMOJI_OPTS);
+        moodBox.classList.toggle('has-mood', !!newMood);
+        closeMoodPickers();
+
+        try {
+            const res = await fetch('/api/log/mood', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', [csrfHeader]: csrfToken },
+                body: JSON.stringify({
+                    date: row.dataset.date,
+                    hour: parseInt(row.dataset.hour, 10),
+                    mood: newMood
+                })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.id) row.dataset.id = data.id;
+            }
+        } catch (e) {
+            console.error('감정 저장 실패', e);
+        }
+    }
+
+    // ── 감정 피커 열기 / 닫기 ────────────────────────────────────────
+    function openMoodPicker(moodBox) {
+        closeMoodPickers();
+        const currentMood = moodBox.dataset.mood;
+        moodBox.querySelectorAll('.mood-option').forEach(opt => {
+            opt.classList.toggle('selected', opt.dataset.emoji === currentMood);
+        });
+        moodBox.querySelector('.mood-picker').classList.add('open');
+    }
+
+    function closeMoodPickers() {
+        document.querySelectorAll('.mood-picker.open').forEach(p => p.classList.remove('open'));
+    }
+
     // ── 이벤트 위임 ──────────────────────────────────────────────────
     document.addEventListener('click', (e) => {
+        if (e.target.closest('#date-cal')) return;
+
+        if (e.target.closest('.date-label')) {
+            closeMoodPickers();
+            toggleCal();
+            return;
+        }
+
+        closeCal();
+
+        if (e.target.closest('.mood-option')) {
+            e.stopPropagation();
+            const option = e.target.closest('.mood-option');
+            selectMood(option.closest('.hour-row'), option.closest('.mood-box'), option.dataset.emoji);
+            return;
+        }
+
+        if (e.target.closest('.mood-box')) {
+            e.stopPropagation();
+            const moodBox = e.target.closest('.mood-box');
+            if (moodBox.querySelector('.mood-picker').classList.contains('open')) {
+                closeMoodPickers();
+            } else {
+                openMoodPicker(moodBox);
+            }
+            return;
+        }
+
+        if (e.target.closest('.hour-label')) {
+            closeMoodPickers();
+            return;
+        }
+
+        closeMoodPickers();
+
         if (e.target.closest('.btn-save')) {
             e.stopPropagation();
             saveLog(e.target.closest('.hour-row'));
@@ -178,6 +302,75 @@
         openEditor(clickedRow);
     });
 
+    // ── 커스텀 달력 ──────────────────────────────────────────────────
+    const cal = document.getElementById('date-cal');
+    const calDays = document.getElementById('cal-days');
+    const calTitle = cal.querySelector('.cal-title');
+    let calYear, calMonth;
+
+    const MONTH_NAMES = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+
+    function renderCal() {
+        calTitle.textContent = calYear + '년 ' + MONTH_NAMES[calMonth];
+        calDays.innerHTML = '';
+
+        const firstDay = new Date(calYear, calMonth, 1).getDay();
+        const lastDate = new Date(calYear, calMonth + 1, 0).getDate();
+        const today    = new Date();
+        const [selY, selM, selD] = DATE_STR.split('-').map(Number);
+
+        for (let i = 0; i < firstDay; i++) {
+            calDays.appendChild(document.createElement('span'));
+        }
+        for (let d = 1; d <= lastDate; d++) {
+            const span = document.createElement('span');
+            span.textContent = d;
+            span.className = 'cal-day';
+            if (calYear === today.getFullYear() && calMonth === today.getMonth() && d === today.getDate())
+                span.classList.add('today');
+            if (calYear === selY && calMonth === selM - 1 && d === selD)
+                span.classList.add('selected');
+            span.addEventListener('click', () => {
+                const str = [calYear, String(calMonth + 1).padStart(2, '0'), String(d).padStart(2, '0')].join('-');
+                window.location.href = '/diary?date=' + str;
+            });
+            calDays.appendChild(span);
+        }
+    }
+
+    function openCal() {
+        const [y, m] = DATE_STR.split('-').map(Number);
+        calYear = y; calMonth = m - 1;
+        renderCal();
+
+        const rect = document.querySelector('.date-label').getBoundingClientRect();
+        const calW = 252;
+        let left = rect.left + rect.width / 2 - calW / 2;
+        left = Math.max(8, Math.min(left, window.innerWidth - calW - 8));
+        cal.style.top  = (rect.bottom + 6) + 'px';
+        cal.style.left = left + 'px';
+
+        cal.classList.add('open');
+    }
+
+    function closeCal() { cal.classList.remove('open'); }
+
+    function toggleCal() {
+        cal.classList.contains('open') ? closeCal() : openCal();
+    }
+
+    cal.querySelector('.cal-prev').addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (--calMonth < 0) { calMonth = 11; calYear--; }
+        renderCal();
+    });
+
+    cal.querySelector('.cal-next').addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (++calMonth > 11) { calMonth = 0; calYear++; }
+        renderCal();
+    });
+
     // ── 오늘이면 현재 시각으로 스크롤 ───────────────────────────────
     if (IS_TODAY) {
         const currentRow = document.getElementById('hour-' + CURRENT_HOUR);
@@ -185,6 +378,10 @@
             setTimeout(() => currentRow.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
         }
     }
+
+    document.querySelectorAll('.mood-display, .mood-option, .preview').forEach(el => {
+        twemoji.parse(el, TWEMOJI_OPTS);
+    });
     </script>
 </body>
 </html>

@@ -14,13 +14,14 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 
 @Controller
 public class DiaryController {
 
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
     private static final DateTimeFormatter DISPLAY_FORMAT =
-            DateTimeFormatter.ofPattern("yyyy년 M월 d일");
+            DateTimeFormatter.ofPattern("yyyy년 M월 d일 (E)", Locale.KOREAN);
 
     private final HourLogService hourLogService;
     private final AppUserService appUserService;
